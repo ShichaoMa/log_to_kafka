@@ -1,19 +1,18 @@
 # -*- coding:utf-8 -*-
-import signal
 import logging
 import os
 import sys
 import errno
 import time
 import traceback
-import ctypes
-import inspect
-from functools import wraps
+import copy
+import datetime
+from pythonjsonlogger import jsonlogger
 from kafka import KafkaClient, SimpleProducer
 from kafka.common import FailedPayloadsError
+from functools import wraps
 from cloghandler import ConcurrentRotatingFileHandler
-from scutils.log_factory import LogFactory, LogObject
-from scutils.settings_wrapper import SettingsWrapper
+from settings_wrapper import SettingsWrapper
 
 
 settings = SettingsWrapper().load("default_settings.py", "default_settings.py")
@@ -44,14 +43,14 @@ def failedpayloads_wrapper(max_iter_times, _raise=False):
     return out_wrapper_methed
 
 
-class CustomLogFactory(LogFactory):
+class LogFactory(object):
 
     _instance = None
 
     @classmethod
     def get_instance(self, **kwargs):
         if self._instance is None:
-            self._instance = CustomLogObject(**kwargs)
+            self._instance = LogObject(**kwargs)
 
         return self._instance
 
@@ -76,7 +75,35 @@ class KafkaHandler(logging.Handler):
         self.release()
 
 
-class CustomLogObject(LogObject):
+def extras_wrapper(self, item):
+
+    def logger_func_wrapper(func):
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if self.level_dict[item.upper()] >= self.level_dict[self.log_level]:
+                if len(args) > 2:
+                    extras = args[1]
+                else:
+                    extras = kwargs.pop("extras", {})
+                extras = self.add_extras(extras, item)
+                return func(args[0], extra=extras)
+
+        return wrapper
+
+    return logger_func_wrapper
+
+
+class LogObject(object):
+
+    level_dict = {
+        "DEBUG": 0,
+        "INFO": 1,
+        "WARN": 2,
+        "WARNING": 2,
+        "ERROR": 3,
+        "CRITICAL": 4,
+    }
 
     def __init__(self, json=False, name='scrapy-cluster', level='INFO',
                  format='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
@@ -85,6 +112,7 @@ class CustomLogObject(LogObject):
         self.logger.setLevel(logging.DEBUG)
         self.logger.propagate = propagate
         self.json = json
+        self.name = name
         self.log_level = level
         self.format_string = format
 
@@ -94,7 +122,34 @@ class CustomLogObject(LogObject):
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
         self._check_log_level(self.log_level)
-        self.debug("Logging to %s"%handler.__class__.__name__)
+        self.logger.debug("Logging to %s"%handler.__class__.__name__)
+
+    def __getattr__(self, item):
+        if item.upper() in self.level_dict:
+            return extras_wrapper(self, item)(getattr(self.logger, item))
+        else:
+            return super(LogObject, self).__getattr__(item)
+
+    def _get_formatter(self, json):
+        if json:
+            return jsonlogger.JsonFormatter()
+        else:
+            return logging.Formatter(self.format_string)
+
+    def _check_log_level(self, level):
+        if level not in self.level_dict.keys():
+            self.log_level = 'DEBUG'
+            self.logger.warn("Unknown log level '%s', defaulting to DEBUG"%level)
+
+    def add_extras(self, dict, level):
+        my_copy = copy.deepcopy(dict)
+        if 'level' not in my_copy:
+            my_copy['level'] = level
+        if 'timestamp' not in my_copy:
+            my_copy['timestamp'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        if 'logger' not in my_copy:
+            my_copy['logger'] = self.name
+        return my_copy
 
 
 class Logger(object):
@@ -120,7 +175,7 @@ class Logger(object):
         my_file = "%s.log" % self.name
         my_backups = self.settings.get('LOG_BACKUPS', 5)
         to_kafka = self.settings.get("TO_KAFKA", False)
-        self.logger = CustomLogFactory.get_instance(json=my_json,
+        self.logger = LogFactory.get_instance(json=my_json,
                                                     name=my_name,
                                                     level=my_level)
         if to_kafka:
@@ -139,54 +194,6 @@ class Logger(object):
                     os.path.join(my_dir, my_file),
                     backupCount=my_backups,
                     maxBytes=my_bytes))
-
-
-class ThreadClosing(object):
-
-    alive = True
-
-    def __init__(self):
-        self.threads = []
-        self.int_signal_count = 1
-        self.open()
-        self.logger = LogFactory.get_instance()
-
-    def set_logger(self, logger):
-        self.logger = logger
-
-    def stop(self, *args):
-        if self.int_signal_count > 1:
-            self.logger.info("force to terminate all the threads...")
-            for th in self.threads:
-                self.stop_thread(th)
-        else:
-            self.alive = False
-            self.logger.info("close processor %s..." % self.name)
-            self.int_signal_count += 1
-
-    def open(self):
-        signal.signal(signal.SIGINT, self.stop)
-        signal.signal(signal.SIGTERM, self.stop)
-
-    def set_force_interrupt(self, thread):
-        self.threads.append(thread)
-
-    def _async_raise(self, name, tid, exctype):
-        """raises the exception, performs cleanup if needed"""
-        tid = ctypes.c_long(tid)
-        if not inspect.isclass(exctype):
-            exctype = type(exctype)
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
-        self.logger.info("stop thread %s. "%name)
-        if res == 0:
-            raise ValueError("invalid thread id")
-        elif res != 1:
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
-            raise SystemError("PyThreadState_SetAsyncExc failed")
-
-    def stop_thread(self, thread):
-        self._async_raise(thread.getName(), thread.ident, SystemExit)
-        self.threads.remove(thread)
 
 
 if __name__ == "__main__":
