@@ -1,14 +1,9 @@
 # log_to_kafka
 将日志发送到kafka中，做日志分布式管理
-    ```
-    ├── default_settings.py
-    
+    ├── default_settings.py<div>
     ├── __init__.py
-    
     ├── logger.py
-    
     └── README.md
-    ```
 
 ubuntu
 
