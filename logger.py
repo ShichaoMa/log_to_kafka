@@ -10,7 +10,6 @@ import ctypes
 import inspect
 from functools import wraps
 from kafka import KafkaClient, SimpleProducer
-from argparse import ArgumentParser
 from kafka.common import FailedPayloadsError
 from cloghandler import ConcurrentRotatingFileHandler
 from scutils.log_factory import LogFactory, LogObject
@@ -142,15 +141,18 @@ class Logger(object):
                     maxBytes=my_bytes))
 
 
-class SignalLogger(Logger):
+class ThreadClosing(object):
 
     alive = True
 
-    def __init__(self, settings):
-        super(SignalLogger, self).__init__(settings)
+    def __init__(self):
         self.threads = []
         self.int_signal_count = 1
         self.open()
+        self.logger = LogFactory.get_instance()
+
+    def set_logger(self, logger):
+        self.logger = logger
 
     def stop(self, *args):
         if self.int_signal_count > 1:
@@ -168,14 +170,6 @@ class SignalLogger(Logger):
 
     def set_force_interrupt(self, thread):
         self.threads.append(thread)
-
-    @classmethod
-    def parse_args(cls):
-        parser = ArgumentParser()
-        parser.add_argument("-s", "--settings", dest="settings", help="settings", default="settings_kafkadump.py")
-        parser.add_argument("-c", "--consumer", required=False, dest="consumer", help="comsumer id")
-        parser.add_argument("-t", "--topic", required=True, dest="topic", help="topic")
-        return cls(**vars(parser.parse_args()))
 
     def _async_raise(self, name, tid, exctype):
         """raises the exception, performs cleanup if needed"""
