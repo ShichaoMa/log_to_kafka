@@ -21,12 +21,11 @@ HELLOWORLD
 
     ```python
 
-from logger import Logger
-
-class MyClass(Logger):
-    name = "log_name"
-    def __init__(self, settings_file):
-        super(MyClass, self).__init__(settings_file)
-        self.logger.debug("....")
+    from logger import Logger
+    class MyClass(Logger):
+        name = "log_name"
+        def __init__(self, settings_file):
+            super(MyClass, self).__init__(settings_file)
+            self.logger.debug("....")
 
 ```
