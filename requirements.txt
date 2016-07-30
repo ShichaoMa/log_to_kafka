@@ -1,0 +1,2 @@
+scutils
+kafka-python==0.9.5

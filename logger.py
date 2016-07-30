@@ -1,9 +1,6 @@
 # -*- coding:utf-8 -*-
 import signal
 import logging
-import socket
-import fcntl
-import struct
 import os
 import sys
 import errno
@@ -49,10 +46,7 @@ def failedpayloads_wrapper(max_iter_times, _raise=False):
 
 
 class CustomLogFactory(LogFactory):
-    '''
-    Goal is to manage Simple LogObject instances
-    Like a Singleton
-    '''
+
     _instance = None
 
     @classmethod
