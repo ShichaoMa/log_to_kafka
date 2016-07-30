@@ -2,8 +2,11 @@
 将日志发送到kafka中，做日志分布式管理
     ```
     ├── default_settings.py
+    
     ├── __init__.py
+    
     ├── logger.py
+    
     └── README.md
     ```
 
