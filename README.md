@@ -5,7 +5,7 @@
     ├── logger.py<br/>
     └── README.md<br/>
 
-ubuntu
+ubuntu & windows
 
 INSTALL
 
@@ -15,7 +15,7 @@ INSTALL
 
 HELLOWORLD
 
-    demon1
+    demo1
 
     ```
     from logger import Logger
@@ -26,7 +26,7 @@ HELLOWORLD
             self.logger.debug("....")
     ```
 
-    demon2
+    demo2
 
     ```
     import os
@@ -47,7 +47,7 @@ HELLOWORLD
     logger.info("this is a log. ")
     ```
 
-    demon3
+    demo3
 
     ```
     from logger import CustomLogFactory, KafkaHandler
@@ -58,7 +58,7 @@ HELLOWORLD
     logger.info("this is a log. ")
     ```
 
-    demon4
+    demo4
     ```
     import sys
     import logging
@@ -68,7 +68,7 @@ HELLOWORLD
     logger.info("this is a log. ")
     ```
 
-    demon5
+    demo5
     ```
     # 编写自定义handler
     # 请参见KafkaHandler的实现方式
