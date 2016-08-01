@@ -23,7 +23,11 @@ HELLOWORLD
         name = "log_name"
         def __init__(self, settings_file):
             super(MyClass, self).__init__(settings_file)
-            self.logger.debug("....")
+
+
+    MC = MyClass("default_settings.py")
+    MC.set_logger()
+    MC.logger.debug("....")
     ```
 
     demon2

@@ -160,7 +160,6 @@ class Logger(object):
 
     def __init__(self, settings):
         self.settings = self.setting_wrapper.load(settings, "default_settings.py")
-        self.set_logger()
 
     def set_logger(self, logger=None):
         if logger:
