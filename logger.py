@@ -13,9 +13,7 @@ from kafka.common import FailedPayloadsError
 from functools import wraps
 from cloghandler import ConcurrentRotatingFileHandler
 from settings_wrapper import SettingsWrapper
-
-
-settings = SettingsWrapper().load("default_settings.py", "default_settings.py")
+import default_settings
 
 
 def failedpayloads_wrapper(max_iter_times, _raise=False):
@@ -58,15 +56,16 @@ class LogFactory(object):
 class KafkaHandler(logging.Handler):
 
     def __init__(self, settings):
+        self.settings = settings
         self.client = KafkaClient(settings.get("KAFKA_HOSTS"))
         self.producer = SimpleProducer(self.client)
         self.producer.send_messages = failedpayloads_wrapper(5)(self.producer.send_messages)
         super(KafkaHandler, self).__init__()
 
     def emit(self, record):
-        self.client.ensure_topic_exists(settings.get("TOPIC"))
+        self.client.ensure_topic_exists(self.settings.get("TOPIC"))
         buf = self.formatter.format(record)
-        self.producer.send_messages(settings.get("TOPIC"), buf)
+        self.producer.send_messages(self.settings.get("TOPIC"), buf)
 
     def close(self):
         self.acquire()
@@ -158,8 +157,8 @@ class Logger(object):
 
     setting_wrapper = SettingsWrapper()
 
-    def __init__(self, settings):
-        self.settings = self.setting_wrapper.load(settings, "default_settings.py")
+    def __init__(self, settings=None):
+        self.settings = self.setting_wrapper.load(settings, default_settings)
 
     def set_logger(self, logger=None):
         if logger:
@@ -178,7 +177,7 @@ class Logger(object):
                                                     name=my_name,
                                                     level=my_level)
         if to_kafka:
-            self.logger.set_handler(KafkaHandler(settings))
+            self.logger.set_handler(KafkaHandler(self.settings))
         elif my_output:
             self.logger.set_handler(logging.StreamHandler(sys.stdout))
         else:

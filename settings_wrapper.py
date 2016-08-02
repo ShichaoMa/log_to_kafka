@@ -64,12 +64,15 @@ class SettingsWrapper(object):
         '''
         Load the default settings
         '''
-        if default[-3:] == '.py':
+        if isinstance(default, str) and default[-3:] == '.py':
             default = default[:-3]
 
         self.my_settings = {}
         try:
-            settings = importlib.import_module(default)
+            if isinstance(default, str):
+                settings = importlib.import_module(default)
+            else:
+                settings = default
             self.my_settings = self._convert_to_dict(settings)
         except ImportError:
             print "No default settings found"
@@ -79,12 +82,15 @@ class SettingsWrapper(object):
         Load the user defined settings, overriding the defaults
 
         '''
-        if settings_name[-3:] == '.py':
+        if isinstance(settings_name, str) and settings_name[-3:] == '.py':
             settings_name = settings_name[:-3]
 
         new_settings = {}
         try:
-            settings = importlib.import_module(settings_name)
+            if isinstance(settings_name, str):
+                settings = importlib.import_module(settings_name)
+            else:
+                settings = settings_name
             new_settings = self._convert_to_dict(settings)
         except ImportError:
             print "No override settings found"
