@@ -11,7 +11,7 @@ ubuntu & windows
 ::
 
 git clone https://github.com/ShichaoMa/log_to_kafka.git
-sudo python setup.py
+sudo python setup.py  install
 
 or
 
