@@ -1,19 +1,21 @@
 # -*- coding:utf-8 -*-
+import copy
+import datetime
+import errno
 import logging
 import os
 import sys
-import errno
 import time
 import traceback
-import copy
-import datetime
-from pythonjsonlogger import jsonlogger
+from functools import wraps
+
+from cloghandler import ConcurrentRotatingFileHandler
 from kafka import KafkaClient, SimpleProducer
 from kafka.common import FailedPayloadsError
-from functools import wraps
-from cloghandler import ConcurrentRotatingFileHandler
-from settings_wrapper import SettingsWrapper
+from pythonjsonlogger import jsonlogger
+
 import default_settings
+from settings_wrapper import SettingsWrapper
 
 
 def failedpayloads_wrapper(max_iter_times, _raise=False):
