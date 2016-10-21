@@ -6,7 +6,13 @@ try:
 except:
     from distutils.core import setup
 
-from log_to_kafka import AUTHOR, AUTHOR_EMAIL, VERSION, URL
+VERSION = '1.0.2'
+
+AUTHOR = "cn"
+
+AUTHOR_EMAIL = "308299269@qq.com"
+
+URL = "https://www.github.com/ShichaoMa/log_to_kafka"
 
 
 def read(fname):

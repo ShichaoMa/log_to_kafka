@@ -128,8 +128,7 @@ class LogObject(object):
     def __getattr__(self, item):
         if item.upper() in self.level_dict:
             return extras_wrapper(self, item)(getattr(self.logger, item))
-        else:
-            return super(LogObject, self).__getattr__(item)
+        raise AttributeError
 
     def _get_formatter(self, json):
         if json:
