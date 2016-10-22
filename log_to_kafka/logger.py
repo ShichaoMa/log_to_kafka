@@ -7,15 +7,46 @@ import os
 import sys
 import time
 import traceback
-from functools import wraps
 
-from cloghandler import ConcurrentRotatingFileHandler
+from functools import wraps
+from portalocker import lock, unlock, LOCK_EX
+
+from cloghandler import ConcurrentRotatingFileHandler, NullLogRecord
 from kafka import KafkaClient, SimpleProducer
 from kafka.common import FailedPayloadsError
 from pythonjsonlogger import jsonlogger
 
 import default_settings
 from settings_wrapper import SettingsWrapper
+
+class FixedConcurrentRotatingFileHandler(ConcurrentRotatingFileHandler):
+    """
+    修正windows多次调用进程间lock产生的死锁问题
+    """
+    def acquire(self):
+        """ Acquire thread and file locks.  Re-opening log for 'degraded' mode.
+        """
+        # handle thread lock
+        logging.Handler.acquire(self)
+        # Issue a file lock.  (This is inefficient for multiple active threads
+        # within a single process. But if you're worried about high-performance,
+        # you probably aren't using this log handler.)
+        if self.stream_lock:
+            # If stream_lock=None, then assume close() was called or something
+            # else weird and ignore all file-level locks.
+            if self.stream_lock.closed:
+                # Daemonization can close all open file descriptors, see
+                # https://bugzilla.redhat.com/show_bug.cgi?id=952929
+                # Try opening the lock file again.  Should we warn() here?!?
+                try:
+                    self._open_lockfile()
+                except Exception:
+                    self.handleError(NullLogRecord())
+                    # Don't try to open the stream lock again
+                    self.stream_lock = None
+                    return
+            unlock(self.stream_lock)
+            lock(self.stream_lock, LOCK_EX)
 
 
 def failedpayloads_wrapper(max_iter_times, _raise=False):
@@ -188,8 +219,12 @@ class Logger(object):
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
                     raise
+            if os.name == "nt":
+                handler = FixedConcurrentRotatingFileHandler
+            else:
+                handler = ConcurrentRotatingFileHandler
             self.logger.set_handler(
-                ConcurrentRotatingFileHandler(
+                handler(
                     os.path.join(my_dir, my_file),
                     backupCount=my_backups,
                     maxBytes=my_bytes))
