@@ -190,7 +190,11 @@ class Logger(object):
     setting_wrapper = SettingsWrapper()
 
     def __init__(self, settings=None):
-        self.settings = self.setting_wrapper.load(settings, default_settings)
+
+        if isinstance(settings, dict):
+            self.settings = settings
+        else:
+            self.settings = self.setting_wrapper.load(settings, default_settings)
 
     def set_logger(self, logger=None):
         if logger:
