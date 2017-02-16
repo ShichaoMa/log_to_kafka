@@ -10,7 +10,7 @@ LOG_JSON = False
 # log文件目录
 LOG_DIR = "logs"
 # 每个log最大大小
-LOG_MAX_BYTES = '10MB'
+LOG_MAX_BYTES = 1024*1024*10
 # log备份数量
 LOG_BACKUPS = 5
 # 是否发送到kafka

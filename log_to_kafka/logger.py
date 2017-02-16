@@ -16,8 +16,8 @@ from kafka import KafkaClient, SimpleProducer
 from kafka.common import FailedPayloadsError
 from pythonjsonlogger import jsonlogger
 
-import default_settings
-from settings_wrapper import SettingsWrapper
+from . import default_settings
+from .settings_wrapper import SettingsWrapper
 
 class FixedConcurrentRotatingFileHandler(ConcurrentRotatingFileHandler):
     """
@@ -60,7 +60,7 @@ def failedpayloads_wrapper(max_iter_times, _raise=False):
                 try:
                     func(*args)
                     break
-                except Exception, e:
+                except Exception as e:
                     if _raise and not isinstance(e, FailedPayloadsError):
                         raise e
                     count += 1
@@ -98,6 +98,8 @@ class KafkaHandler(logging.Handler):
     def emit(self, record):
         self.client.ensure_topic_exists(self.settings.get("TOPIC"))
         buf = self.formatter.format(record)
+        if hasattr(buf, "encode"):
+            buf = buf.encode(sys.getdefaultencoding())
         self.producer.send_messages(self.settings.get("TOPIC"), buf)
 
     def close(self):
@@ -113,13 +115,12 @@ def extras_wrapper(self, item):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            if self.level_dict[item.upper()] >= self.level_dict[self.log_level]:
-                if len(args) > 2:
-                    extras = args[1]
-                else:
-                    extras = kwargs.pop("extras", {})
-                extras = self.add_extras(extras, item)
-                return func(args[0], extra=extras)
+            if len(args) > 2:
+                extras = args[1]
+            else:
+                extras = kwargs.pop("extras", {})
+            extras = self.add_extras(extras, item)
+            return func(args[0], extra=extras)
 
         return wrapper
 
@@ -128,24 +129,18 @@ def extras_wrapper(self, item):
 
 class LogObject(object):
 
-    level_dict = {
-        "DEBUG": 0,
-        "INFO": 1,
-        "WARN": 2,
-        "WARNING": 2,
-        "ERROR": 3,
-        "CRITICAL": 4,
-    }
 
     def __init__(self, json=False, name='scrapy-cluster', level='INFO',
                  format='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
                  propagate=False):
         self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.DEBUG)
+        root = logging.getLogger()
+        # 将的所有使用Logger模块生成的logger设置一样的logger level
+        for log in root.manager.loggerDict.keys():
+            root.getChild(log).setLevel(getattr(logging, level, 10))
         self.logger.propagate = propagate
         self.json = json
         self.name = name
-        self.log_level = level
         self.format_string = format
 
     def set_handler(self, handler):
@@ -153,11 +148,10 @@ class LogObject(object):
         formatter = self._get_formatter(self.json)
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
-        self._check_log_level(self.log_level)
         self.logger.debug("Logging to %s"%handler.__class__.__name__)
 
     def __getattr__(self, item):
-        if item.upper() in self.level_dict:
+        if item.upper() in logging._nameToLevel:
             return extras_wrapper(self, item)(getattr(self.logger, item))
         raise AttributeError
 
@@ -166,11 +160,6 @@ class LogObject(object):
             return jsonlogger.JsonFormatter()
         else:
             return logging.Formatter(self.format_string)
-
-    def _check_log_level(self, level):
-        if level not in self.level_dict.keys():
-            self.log_level = 'DEBUG'
-            self.logger.warn("Unknown log level '%s', defaulting to DEBUG"%level)
 
     def add_extras(self, dict, level):
         my_copy = copy.deepcopy(dict)
