@@ -1,12 +1,10 @@
 # -*- coding:utf-8 -*-
-import codecs
-import os
 try:
     from setuptools import setup, find_packages
 except:
     from distutils.core import setup
 
-VERSION = '1.0.7'
+VERSION = '1.0.9'
 
 AUTHOR = "cn"
 
@@ -14,15 +12,14 @@ AUTHOR_EMAIL = "308299269@qq.com"
 
 URL = "https://www.github.com/ShichaoMa/log_to_kafka"
 
-
-def read(fname):
-    return codecs.open(os.path.join(os.path.dirname(__file__), fname)).read()
-
 NAME = "log-to-kafka"
 
 DESCRIPTION = "log to kafka"
 
-LONG_DESCRIPTION = read("README.rst")
+try:
+    LONG_DESCRIPTION = open("README.rst").read()
+except UnicodeDecodeError:
+    LONG_DESCRIPTION = open("README.rst", encoding="utf-8").read()
 
 KEYWORDS = "log kafka"
 

@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 import time
-import traceback
 
 from functools import wraps
 from portalocker import lock, unlock, LOCK_EX
@@ -51,10 +50,10 @@ class FixedConcurrentRotatingFileHandler(ConcurrentRotatingFileHandler):
 
 def failedpayloads_wrapper(max_iter_times, _raise=False):
 
-    def out_wrapper_methed(func):
+    def out_wrapper_method(func):
 
         @wraps(func)
-        def inner_wrapper_methed(*args):
+        def inner_wrapper_method(*args):
             count = 0
             while count <= max_iter_times:
                 try:
@@ -64,14 +63,13 @@ def failedpayloads_wrapper(max_iter_times, _raise=False):
                     if _raise and not isinstance(e, FailedPayloadsError):
                         raise e
                     count += 1
-                    traceback.print_exc()
                     if count > max_iter_times and _raise:
                         raise
                     time.sleep(0.1)
 
-        return inner_wrapper_methed
+        return inner_wrapper_method
 
-    return out_wrapper_methed
+    return out_wrapper_method
 
 
 class LogFactory(object):
@@ -92,7 +90,8 @@ class KafkaHandler(logging.Handler):
         self.settings = settings
         self.client = KafkaClient(settings.get("KAFKA_HOSTS"))
         self.producer = SimpleProducer(self.client)
-        self.producer.send_messages = failedpayloads_wrapper(5)(self.producer.send_messages)
+        self.producer.send_messages = failedpayloads_wrapper(
+            settings.get("KAFKA_RETRY_TIME", 5))(self.producer.send_messages)
         super(KafkaHandler, self).__init__()
 
     def emit(self, record):
