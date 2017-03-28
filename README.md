@@ -1,9 +1,8 @@
-#log_to_kafka
-#DESCRIPTION
+# DESCRIPTION
 将日志发送到kafka中，做日志分布式管理<br/>
 
-#INSTALL
-##ubuntu & windows
+# INSTALL
+## ubuntu & windows
 ```bash
 git clone https://github.com/ShichaoMa/log_to_kafka.git
 sudo python setup.py install
@@ -12,8 +11,8 @@ or
 
 sudo pip install log_to_kafka
 ```
-#HELLOWORLD
-##demo1
+# HELLOWORLD
+## demo1
 ```python
 from log_to_kafka import Logger
 class MyClass(Logger):
@@ -26,7 +25,7 @@ MC = MyClass("default_settings.py")
 MC.set_logger()
 MC.logger.debug("....")
 ```
-##demo2
+## demo2
 ```python
 import os
 from log_to_kafka import LogFactory
@@ -45,7 +44,7 @@ ConcurrentRotatingFileHandler(
     maxBytes=10240))
 logger.info("this is a log. ")
 ```
-##demo3
+## demo3
 ```python
 from log_to_kafka import LogFactory, KafkaHandler
 settings = {"KAFKA_HOSTS":"192.168.200.90:9092", "TOPIC":"jay-cluster-logs"}
@@ -54,7 +53,7 @@ kafka_handler = KafkaHandler(settings)
 logger.set_handler(kafka_handler)
 logger.info("this is a log. ")
 ```
-##demo4
+## demo4
 ```python
 import sys
 import logging
@@ -63,7 +62,7 @@ logger = LogFactory.get_instance(name="test_name")
 logger.set_handler(logging.StreamHandler(sys.stdout))
 logger.info("this is a log. ")
 ```
-##demo5
+## demo5
 ```python
 # 编写自定义handler
 # 请参见KafkaHandler的实现方式
