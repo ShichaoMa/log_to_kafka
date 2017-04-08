@@ -8,7 +8,7 @@ VERSION = '1.0.9'
 
 AUTHOR = "cn"
 
-AUTHOR_EMAIL = "308299269@qq.com"
+AUTHOR_EMAIL = "cnaafhvk@foxmail.com"
 
 URL = "https://www.github.com/ShichaoMa/log_to_kafka"
 

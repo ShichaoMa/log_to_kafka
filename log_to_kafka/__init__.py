@@ -1,10 +1,10 @@
 # -*- coding:utf-8 -*-
 
-VERSION = '1.0.8'
+VERSION = '1.0.9'
 
 AUTHOR = "cn"
 
-AUTHOR_EMAIL = "308299269@qq.com"
+AUTHOR_EMAIL = "cnaafhvk@foxmail.com"
 
 HOME_PAGE = "https://www.github.com/ShichaoMa/log_to_kafka"
 
